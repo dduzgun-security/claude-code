@@ -325,6 +325,11 @@ An RFC (Request for Comments) is more technically focused than a PRD. It's propo
 
 example: https://github.com/dduzgun-security/CodeCensus/blob/main/docs/RFC.md
 
+### The `prd-rfc-reviewer` sub-agent
+I'm not a project manager by any mean, this is why I create a `prd-rfc-reviewer.md` sub-agent to help me review the content I've created before creating the tasks.
+
+example: https://github.com/dduzgun-security/CodeCensus/blob/main/.claude/agents/prd-rfc-reviewer.md
+
 ### The task planifier (TASKS.md)
 Once the RFC is solid, I don't jump straight into coding. I ask Claude Code to break the RFC down into a TASKS.md file — a sequenced list of implementable units of work. This is the bridge between "what we designed" and "what we build next."
 

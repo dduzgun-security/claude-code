@@ -266,3 +266,109 @@ claude --plugin-dir ./my-plugin
 
 ### Plugins vs. standalone config
 Use standalone files in `.claude/` when you're iterating quickly on a single project and don't need to share. Use plugins when you want to distribute skills, agents, hooks, and commands as a single package across projects or teams. 
+
+## My way of working
+
+### `Docs` directory
+Before asking Claude Code to do anything, I always create a `/docs` directory which serves as my planing zone. 
+
+### The `PRD.md` (Product Requirements Document)
+Once created, I go through a back and forward session with Claude Code to create a `PRD.md` document about the feature I want to implement. I make sure that the following sections are present in my PRD document:
+
+1. **Overview** — What you're building and why it matters, in a few sentences.
+
+2. **Problem Statement** — The user or business problem, backed by data or research.
+
+3. **Goals & Success Metrics** — What success looks like, with measurable targets.
+
+4. **Scope & Non-Scope** — What's included and, just as importantly, what's not.
+
+5. **Requirements** — Functional (what it does) and non-functional (performance, security, etc.).
+
+6. **Open Questions** — Unresolved decisions that need input.
+
+---
+
+> **Optional sections to add for larger initiatives:** Target Users / Personas, Design & UX, Technical Considerations, Dependencies & Assumptions, Release Plan, Risks & Mitigations, Appendix.
+
+example: https://github.com/dduzgun-security/CodeCensus/blob/main/docs/PRD.md
+
+Once the PRD is completed and everything makes sense, I move on to the RFC step.
+
+### The `RFC.md` (Request for Comments)
+An RFC (Request for Comments) is more technically focused than a PRD. It's proposing how to build something and inviting feedback from engineers and architects. Here's how a good one flows:
+
+1. **Title & Metadata** — RFC number, author, date, status (Draft / In Review / Accepted / Rejected), stakeholders and reviewers.
+
+2. **Summary** — A one-paragraph explanation of what you're proposing. Someone should be able to read this and know whether the RFC is relevant to them.
+
+3. **Motivation** — Why this change is needed. What's the current state, what's broken or limiting, and what triggered this proposal? Link to the relevant PRD if one exists.
+
+4. **Proposed Design** — The core of the RFC. Describe the architecture, components, APIs, data models, and how they interact. Use diagrams where helpful. Be specific enough that another engineer could implement it.
+
+5. **Alternatives Considered** — What other approaches did you evaluate and why did you reject them? This shows you've thought broadly, not just landed on the first idea.
+
+6. **Trade-offs & Limitations** — Be honest about what this design doesn't solve, where it's weak, or what technical debt it introduces.
+
+7. **Migration / Rollout Plan** — How do you get from here to there? Backward compatibility, feature flags, data migrations, rollback strategy.
+
+8. **Security & Privacy Considerations** — Any new attack surfaces, data handling changes, or compliance implications.
+
+9. **Observability & Operability** — How will you monitor this? Logging, metrics, alerting, and how on-call engineers will debug issues.
+
+10. **Open Questions** — What you haven't decided yet and what you need feedback on. This is where the "Request for Comments" part actually happens.
+
+---
+
+> **Tone:** Direct and technical — not a sales pitch. A great RFC makes it easy for reviewers to poke holes, because that's the whole point.
+
+example: https://github.com/dduzgun-security/CodeCensus/blob/main/docs/RFC.md
+
+### The task planifier (TASKS.md)
+Once the RFC is solid, I don't jump straight into coding. I ask Claude Code to break the RFC down into a TASKS.md file — a sequenced list of implementable units of work. This is the bridge between "what we designed" and "what we build next."
+
+I prompt Claude Code in plan mode (Shift+Tab ×2) with something like:
+```
+Read the PRD at docs/PRD.md and the RFC at docs/RFC.md. Break the implementation into a sequenced task list. Each task should be small enough to complete in a single Claude Code session that will get cleared once completed. Output it as docs/TASKS.md.
+```
+
+What a good TASKS.md looks like
+```
+# Implementation Tasks
+
+## Phase 1: Foundation
+- [x] Task 1: Set up project scaffolding (framework, linting, CI)
+- [x] Task 2: Define database schema and run initial migration
+- [ ] Task 3: Implement base API structure with health check endpoint
+
+## Phase 2: Core Features
+- [ ] Task 4: Build asset CRUD endpoints
+- [ ] Task 5: Add ownership assignment logic
+- [ ] Task 6: Implement search with filtering
+
+## Phase 3: Polish
+- [ ] Task 7: Add notification system
+- [ ] Task 8: Build analytics dashboard
+- [ ] Task 9: Write end-to-end tests
+```
+
+Rules I follow
+- One task = one focused session. If a task needs more than ~30 minutes of Claude Code time, it's too big — split it.
+- Sequence matters. Tasks should build on each other so you're never blocked by a dependency you haven't built yet.
+- Checkboxes are the progress tracker. After completing a task, I tell Claude to check it off in TASKS.md. This way, when I /clear and start a new session, Claude can read TASKS.md and immediately know where I left off.
+- Reference the source. Each task should trace back to a requirement in the PRD or a component in the RFC. If a task doesn't map to either, question whether it's needed.
+- Re-plan when things change. If midway through implementation the design shifts, I update the RFC first, then regenerate or adjust TASKS.md. The task list is a living document, not a contract.
+
+
+The workflow in practice
+```
+1. /clear
+2. Read docs/TASKS.md, pick up from the first unchecked task.
+3. Complete the task.
+4. Run tests and lint to verify.
+5. Mark the task as done in TASKS.md.
+6. Commit with a clear message tied to the task.
+7. /clear and repeat.
+```
+
+This keeps each session focused, the context window clean, and gives you a clear record of progress. It also means you can stop and resume at any point. The state lives in the repo, not in your head or a Claude Code session.

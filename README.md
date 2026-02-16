@@ -9,6 +9,7 @@ Tips and tricks I use to optimize my experience with Claude Code.
 - [Agents](#agents)
 - [Skills](#skills)
 - [Plugins](#plugins)
+- [My way of working](#my-way-of-working)
 
 ## Keyboard shortcuts
 - **Shift + Tab**: Toggles modes between `Normal`, `Auto-accept` and `Plan` mode. Always consider starting with plan mode to validate the work.
@@ -269,7 +270,7 @@ Use standalone files in `.claude/` when you're iterating quickly on a single pro
 
 ## My way of working
 
-### `Docs` directory
+### `/docs` directory
 Before asking Claude Code to do anything, I always create a `/docs` directory which serves as my planing zone. 
 
 ### The `PRD.md` (Product Requirements Document)

@@ -1,6 +1,15 @@
 # claude-code
 Tips and tricks I use to optimize my experience with Claude Code.
 
+## Table of Contents
+- [Keyboard shortcuts](#keyboard-shortcuts)
+- [Essential commands](#essential-commands)
+- [Global (`~/.claude/CLAUDE.md`)](#global-claudeclaudemd)
+- [Project level (`.claude/CLAUDE.md`)](#project-level-claudeclaudemd)
+- [Agents](#agents)
+- [Skills](#skills)
+- [Plugins](#plugins)
+
 ## Keyboard shortcuts
 - **Shift + Tab**: Toggles modes between `Normal`, `Auto-accept` and `Plan` mode. Always consider starting with plan mode to validate the work.
 - **Esc / Ctrl + C**: Interrupts. Use this when you see that the thinking goes for too long or goes off track.
@@ -70,4 +79,190 @@ Follow these guidelines for all changes unless explicitly told otherwise:
 ```
 
 ## Project level (`.claude/CLAUDE.md`)
-WIP
+The project-level `CLAUDE.md` is where you define context that's specific to this repository. Since your global config already covers universal guidelines, cost optimization, and code style defaults, the project file should focus on what makes this project unique. Avoid duplicating what's in `~/.claude/CLAUDE.md`.
+
+Here's a template I use:
+
+```markdown
+# Project: <project-name>
+
+## Overview
+<!-- One paragraph max. What does this project do, who is it for, and what's the core architecture? -->
+
+## Tech Stack
+- **Language**: TypeScript 5.x (strict mode)
+- **Framework**: Next.js 14 (App Router)
+- **Database**: PostgreSQL via Prisma
+- **Testing**: Vitest + Playwright
+- **Package Manager**: pnpm
+
+## Project Structure
+<!-- Describe the key directories so Claude doesn't have to explore blindly -->
+
+src/
+  app/          # Next.js app router pages and layouts
+  lib/          # Shared utilities, DB client, auth helpers
+  components/   # React components, organized by feature
+  services/     # Business logic, external API integrations
+  types/        # Shared TypeScript types and interfaces
+prisma/         # Schema and migrations
+e2e/            # Playwright end-to-end tests
+
+## Common Commands
+pnpm dev          # Start dev server
+pnpm build        # Production build
+pnpm test         # Run unit tests
+pnpm test:e2e     # Run Playwright tests
+pnpm lint         # ESLint + Prettier check
+pnpm db:migrate   # Run Prisma migrations
+pnpm db:seed      # Seed the database
+
+## Key Conventions
+<!-- Things specific to THIS project that override or extend global defaults -->
+- API routes return `{ data, error }` shape consistently.
+- All DB queries go through service files, never called directly from routes or components.
+- Feature flags are managed via `src/lib/flags.ts` — check there before adding conditional logic.
+- Environment variables are validated at startup in `src/lib/env.ts`. Add new ones there first.
+
+## Architecture Decisions
+<!-- Record non-obvious choices so Claude doesn't suggest alternatives -->
+- We use server components by default; client components only when interactivity is required.
+- Auth is handled via custom middleware in `src/middleware.ts`, not a third-party auth library.
+- We chose Prisma over Drizzle for the query builder — don't suggest switching.
+
+## Current Focus
+<!-- Update this regularly to give Claude task-level context -->
+- Migrating from Pages Router to App Router (70% complete, `/dashboard` routes remain).
+- Adding role-based access control to API routes.
+
+## Known Issues / Tech Debt
+<!-- Prevents Claude from "fixing" things that are known or intentional -->
+- `src/lib/legacy-auth.ts` is deprecated but still used by `/api/v1/*` routes. Don't refactor yet.
+- Test coverage is low on `src/services/billing.ts` — tests welcome here.
+
+## Don'ts (Project-Specific)
+- Don't modify `prisma/schema.prisma` without asking — migrations affect production.
+- Don't add new API routes under `/api/v1/`; use `/api/v2/` for all new endpoints.
+- Don't install CSS libraries — we use Tailwind exclusively.
+```
+
+### Tips for maintaining it
+
+- Keep it under ~150 lines. If it's too long, Claude pays a context tax on every prompt. Move detailed specs into separate files and reference them with # when needed.
+- Update "Current Focus" weekly. This is the highest-value section — it steers Claude toward relevant work without you repeating yourself.
+- Use "Don'ts" sparingly. Only add things Claude has actually gotten wrong or that would be costly mistakes. Don't preemptively list every possible error.
+- Let Claude maintain it. After finishing a feature or making an architecture decision, tell Claude to update the project CLAUDE.md accordingly.
+
+## Agents
+Agents (subagents) are specialized AI assistants that run in their own context window with custom system prompts and scoped tool access. They keep your main conversation clean by offloading exploration, review, or domain-specific tasks into isolated contexts — only returning the final result.
+
+Use `/agents` to create a new Agent for a guided setup, or create a Markdown file manually under: `.claude/agents/code-reviewer.md` (scoped to the project) or `~/.claude/agents/code-reviewer.md` (available across all projects).
+
+When prompting, you can ask a task to use an agent through the `@.claude./agents/agent-name` reference.
+
+Always be cautious about the model used for the specific agent to be cost effective.
+
+Agents are isolated execution contexts with their own prompts, tools, and models. Skills are lazy-loaded context templates (Markdown files with instructions) that get injected into an agent's context. They complement each other: an agent can have skills auto-loaded via the `skills` field.
+
+Pro tip, use Claude to create, manage and update your agents.
+
+Here are existing agents created by the community: https://github.com/dduzgun-security/agents/tree/main/plugins 
+
+## Skills
+Think of it as recurring workflow. Skills are essentially templates of context in Markdown format that are lazy loaded only when needed. 
+
+Here is an example of how to create a skill / recurring workflow.
+
+```
+user: fetch the latest top 10 startup app ideas on reddit and hacker news with the most attraction
+
+claude: .. outputs the 10 startup app ideas
+
+user: save them on my local claude directory
+
+claude: .. saves it in the local directory as a Markdown file (eg: .claude/top10-startup-ideas-2026-01-01.md)
+
+user: save what we just did into a new skill
+
+claude: .. creates a ./claude/skills/fetch-top10-startup-ideas.md file which illustrates a step-by-step workflow of instructions to execute and also creates a command for it ./claude/commands/fetch-top10-startup-ideas.md invokable through /fetch-top10-startup-ideas
+```
+
+Pro tip, use Claude to create, manage and update these skills.  
+
+There are multiple community skills available which can be used: https://github.com/anthropics/skills/tree/main
+
+## Plugins
+Plugins are shareable packages that bundle multiple Claude Code extensions (skills, agents, hooks, commands, MCP servers) into a single installable unit. Think of them as the distribution layer, while skills and agents live as individual files, plugins wrap them together for easy sharing across projects and teams.
+
+### Marketplaces
+Marketplaces are GitHub repos that host collections of plugins. There are three main sources:
+
+- Anthropic official: anthropics/claude-plugins-official for curated, Anthropic-maintained plugins.
+- Anthropic examples: anthropics/claude-code for reference plugins for PR review, security guidance, SDK development.
+- Community: Repos like wshobson/agents, claude-plugins.dev, and others with thousands of community-contributed plugins.
+
+```markdown
+# Add a marketplace
+/plugin marketplace add anthropics/claude-plugins-official
+
+# List available plugins from your marketplaces
+/plugin marketplace list
+```
+
+### Creating a plugin
+
+The minimal plugin needs a `plugin.json` manifest:
+```json
+{
+  "name": "my-plugin",
+  "description": "What this plugin does",
+  "version": "1.0.0"
+}
+```
+Then add components as needed. For example, adding a skill:
+```
+my-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+└── skills/
+    └── code-review/
+        └── SKILL.md
+```
+
+Where SKILL.md follows the standard skill format:
+```
+---
+name: code-review
+description: Reviews code for best practices and potential issues.
+---
+
+When reviewing code, check for:
+1. Code organization and structure
+2. Error handling
+3. Security concerns
+4. Test coverage
+```
+### Testing locally
+Use `--plugin-dir` to load a plugin from a local directory during development without installing it:
+```
+claude --plugin-dir ./my-plugin
+```
+
+### Notable plugins worth trying
+
+- frontend-design: Production-grade UI generation that avoids generic AI aesthetics.
+- security-guidance: Security-focused code analysis.
+- context7 (MCP): Pulls version-specific documentation from source repos into context.
+- Firecrawl (MCP): Web scraping with JS rendering, anti-bot handling, and clean markdown output.
+- Playwright: Browser automation for testing flows.
+- Repomix: Packs codebases into AI-friendly formats for analysis.
+
+### Cost-conscious tips
+
+- MCP servers in plugins can blow up your context window. Since late 2025, Tool Search lazy-loads MCP tool definitions (dropping context from ~134K to ~5K tokens for large tool libraries), but still audit with `/mcp` and disable what you don't need.
+- Prefer plugins with skills over heavy MCP integrations when you just need knowledge/instructions rather than live API access.
+- Use `/context` to check how much token budget plugins are consuming.
+
+
+### Plugins vs. standalone config
+Use standalone files in `.claude/` when you're iterating quickly on a single project and don't need to share. Use plugins when you want to distribute skills, agents, hooks, and commands as a single package across projects or teams. 
